@@ -35,6 +35,10 @@ but there's only so far this will get you.
 leap and others try really hard to be clever about jumping around but in the end
 I found using them to be deeply confusing.
 
+This plugin has existed in my own
+[dotfiles](https://github.com/yorickpeterse/dotfiles) repository for a while,
+and I now deem it stable enough to share it as a standalone plugin.
+
 ## Features
 
 - Jump to arbitrary text similar to `/` but without having to press `n` a bunch
