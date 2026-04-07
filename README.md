@@ -69,7 +69,7 @@ If you want to change the labels to use or the highlight groups, use the `setup`
 function:
 
 ```lua
-require('jump').config({
+require('jump').setup({
   labels = 'abcdef'
 })
 ```
