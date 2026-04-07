@@ -54,8 +54,8 @@ local function available_labels(lines, matches)
     avail[char] = true
   end
 
-  -- First disable all the labels that conflict with any of the characters
-  -- that may be matched by the next input.
+  -- Disable all the labels that conflict with any of the characters that may be
+  -- matched by the next input.
   for _, match in ipairs(matches) do
     local next_col = match.end_col + 1
     local next_char = lines[match.line_index]:sub(next_col, next_col):lower()
