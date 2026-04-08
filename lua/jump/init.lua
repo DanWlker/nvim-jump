@@ -190,22 +190,16 @@ function M.start(opts)
           local after_cursor = match_pos >= dfrom
           local jump_line = match.line
           if before then
-            if after_cursor then
-              if match.start_col == 0 then
-                jump_line = match.line - 1
-                local prev_line = lines[match.line_index - 1]
-                jump_col = prev_line and math.max(0, #prev_line - 1) or 0
-              else
-                jump_col = match.start_col - 1
-              end
-            else
-              local line_len = #lines[match.line_index]
-              if match.start_col + 1 >= line_len then
-                jump_line = match.line + 1
-                jump_col = 0
-              else
-                jump_col = match.start_col + 1
-              end
+            local offset = after_cursor and -1 or 1
+            jump_col = match.start_col + offset
+            local line_len = #lines[match.line_index]
+            if jump_col < 0 then
+              jump_line = match.line - 1
+              local prev_line = lines[match.line_index - 1]
+              jump_col = prev_line and math.max(0, #prev_line - 1) or 0
+            elseif jump_col >= line_len then
+              jump_line = match.line + 1
+              jump_col = 0
             end
           end
           active[label] = { jump_line + 1, jump_col, after_cursor }
