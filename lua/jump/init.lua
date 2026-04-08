@@ -179,13 +179,18 @@ function M.start(opts)
 
         if label then
           local jump_col = match.start_col
+          local match_pos = match.line * cols + match.start_col
+          local after_cursor = match_pos >= dfrom
+          local pending = fn.mode(1):match('^no') ~= nil
           if before then
-            local match_pos = match.line * cols + match.start_col
-            if match_pos >= dfrom then
+            if after_cursor then
               jump_col = math.max(0, match.start_col - 1)
             else
               jump_col = match.start_col + 1
             end
+          end
+          if pending and after_cursor then
+            jump_col = jump_col + 1
           end
           active[label] = { match.line + 1, jump_col }
           api.nvim_buf_set_extmark(buf, NS, match.line, match.start_col, {
