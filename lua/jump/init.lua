@@ -191,7 +191,13 @@ function M.start(opts)
           local jump_line = match.line
           if before then
             if after_cursor then
-              jump_col = math.max(0, match.start_col - 1)
+              if match.start_col == 0 then
+                jump_line = match.line - 1
+                local prev_line = lines[match.line_index - 1]
+                jump_col = prev_line and #prev_line - 1 or 0
+              else
+                jump_col = match.start_col - 1
+              end
             else
               local line_len = #lines[match.line_index]
               if match.start_col + 1 >= line_len then
