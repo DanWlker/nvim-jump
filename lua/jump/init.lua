@@ -188,14 +188,21 @@ function M.start(opts)
           local jump_col = match.start_col
           local match_pos = match.line * cols + match.start_col
           local after_cursor = match_pos >= dfrom
+          local jump_line = match.line
           if before then
             if after_cursor then
               jump_col = math.max(0, match.start_col - 1)
             else
-              jump_col = match.start_col + 1
+              local line_len = #lines[match.line_index]
+              if match.start_col + 1 >= line_len then
+                jump_line = match.line + 1
+                jump_col = 0
+              else
+                jump_col = match.start_col + 1
+              end
             end
           end
-          active[label] = { match.line + 1, jump_col, after_cursor }
+          active[label] = { jump_line + 1, jump_col, after_cursor }
           api.nvim_buf_set_extmark(buf, NS, match.line, match.start_col, {
             virt_text = { { label, CONFIG.label } },
             virt_text_pos = 'overlay',
