@@ -194,7 +194,7 @@ function M.start(opts)
               if match.start_col == 0 then
                 jump_line = match.line - 1
                 local prev_line = lines[match.line_index - 1]
-                jump_col = prev_line and #prev_line - 1 or 0
+                jump_col = prev_line and math.max(0, #prev_line - 1) or 0
               else
                 jump_col = match.start_col - 1
               end
