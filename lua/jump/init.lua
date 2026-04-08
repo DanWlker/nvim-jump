@@ -87,6 +87,7 @@ end
 function M.start(opts)
   opts = opts or {}
   local before = opts.before or false
+  local pending = fn.mode(1):match('^no') ~= nil
   local win = api.nvim_get_current_win()
   local buf = api.nvim_win_get_buf(win)
   local info = fn.getwininfo(win)[1]
@@ -118,14 +119,20 @@ function M.start(opts)
       end
 
       if jump_to then
-        api.nvim_win_set_cursor(win, jump_to)
+        if pending and jump_to[3] then
+          vim.cmd('normal! v')
+        end
+        api.nvim_win_set_cursor(win, { jump_to[1], jump_to[2] })
       end
 
       break
     elseif char == BS then
       chars = chars:sub(1, #chars - 1)
     elseif jump_to then
-      api.nvim_win_set_cursor(win, jump_to)
+      if pending and jump_to[3] then
+        vim.cmd('normal! v')
+      end
+      api.nvim_win_set_cursor(win, { jump_to[1], jump_to[2] })
       break
     else
       chars = chars .. char
@@ -181,7 +188,6 @@ function M.start(opts)
           local jump_col = match.start_col
           local match_pos = match.line * cols + match.start_col
           local after_cursor = match_pos >= dfrom
-          local pending = fn.mode(1):match('^no') ~= nil
           if before then
             if after_cursor then
               jump_col = math.max(0, match.start_col - 1)
@@ -189,10 +195,7 @@ function M.start(opts)
               jump_col = match.start_col + 1
             end
           end
-          if pending and after_cursor then
-            jump_col = jump_col + 1
-          end
-          active[label] = { match.line + 1, jump_col }
+          active[label] = { match.line + 1, jump_col, after_cursor }
           api.nvim_buf_set_extmark(buf, NS, match.line, match.start_col, {
             virt_text = { { label, CONFIG.label } },
             virt_text_pos = 'overlay',
@@ -216,6 +219,10 @@ function M.setup(opts)
   end
 
   LABELS = fn.split(CONFIG.labels, '\\zs')
+end
+
+function M.start_before()
+  M.start({ before = true })
 end
 
 M.setup()
