@@ -54,15 +54,13 @@ local function search(pattern, lines, start_line, matches)
 end
 
 local function backdrop(buf, top, bot)
-  for line = top, bot do
-    api.nvim_buf_set_extmark(buf, NS, line - 1, 0, {
-      hl_group = CONFIG.backdrop,
-      end_row = line,
-      hl_eol = true,
-      priority = 5000,
-      strict = false,
-    })
-  end
+  api.nvim_buf_set_extmark(buf, NS, top - 1, 0, {
+    hl_group = CONFIG.backdrop,
+    end_row = bot,
+    hl_eol = true,
+    priority = 5000,
+    strict = false,
+  })
 end
 
 local function available_labels(lines, matches)
