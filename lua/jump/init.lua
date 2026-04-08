@@ -84,7 +84,9 @@ local function available_labels(lines, matches)
   return avail
 end
 
-function M.start()
+function M.start(opts)
+  opts = opts or {}
+  local before = opts.before or false
   local win = api.nvim_get_current_win()
   local buf = api.nvim_win_get_buf(win)
   local info = fn.getwininfo(win)[1]
@@ -176,7 +178,16 @@ function M.start()
         )
 
         if label then
-          active[label] = { match.line + 1, match.start_col }
+          local jump_col = match.start_col
+          if before then
+            local match_pos = match.line * cols + match.start_col
+            if match_pos >= dfrom then
+              jump_col = math.max(0, match.start_col - 1)
+            else
+              jump_col = match.start_col + 1
+            end
+          end
+          active[label] = { match.line + 1, jump_col }
           api.nvim_buf_set_extmark(buf, NS, match.line, match.start_col, {
             virt_text = { { label, CONFIG.label } },
             virt_text_pos = 'overlay',
