@@ -221,10 +221,6 @@ function M.setup(opts)
   LABELS = fn.split(CONFIG.labels, '\\zs')
 end
 
-function M.start_before()
-  M.start({ before = true })
-end
-
 M.setup()
 
 return M
