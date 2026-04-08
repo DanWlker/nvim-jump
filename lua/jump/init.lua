@@ -128,6 +128,18 @@ function M.start()
 
       search(chars, lines, top, matches)
 
+      local cursor = api.nvim_win_get_cursor(win)
+      local cursor_line = cursor[1] - 1
+      local cursor_col = cursor[2]
+
+      local cols = vim.go.columns
+      table.sort(matches, function(a, b)
+        local dfrom = cursor_line * cols + cursor_col
+        local da = math.abs(a.line * cols + a.start_col - dfrom)
+        local db = math.abs(b.line * cols + b.start_col - dfrom)
+        return da < db
+      end)
+
       local avail = available_labels(lines, matches)
 
       for _, match in ipairs(matches) do
