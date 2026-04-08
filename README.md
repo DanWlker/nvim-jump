@@ -82,10 +82,13 @@ The following settings are available (along with their defaults):
   labels = 'fdsaghjklrewqtyuiopvcxzbnm',
 
   -- The highlight group to use for match highlights.
-  search = 'Search',
+  search = 'FlashMatch',
 
   -- The highlight group to use for labels.
   label = 'FlashLabel',
+
+  -- The highlight group to use for the backdrop.
+  backdrop = 'FlashBackdrop',
 }
 ```
 
@@ -97,8 +100,7 @@ require('jump').setup({
 })
 ```
 
-The default highlight group for labels is `FlashLabel` so migrating from flash
-is easier.
+The default highlight group match flash so migrating is easier.
 
 ## License
 
