@@ -17,6 +17,9 @@ local CONFIG = {
 
   -- The highlight group to use for labels.
   label = 'FlashLabel',
+
+  -- The highlight group to use for the backdrop.
+  backdrop = 'FlashBackdrop',
 }
 
 local function search(pattern, lines, start_line, matches)
@@ -116,6 +119,16 @@ function M.start()
     api.nvim_buf_clear_namespace(buf, NS, 0, -1)
 
     if #chars > 0 then
+      for line = top, bot do
+        api.nvim_buf_set_extmark(buf, NS, line - 1, 0, {
+          hl_group = CONFIG.backdrop,
+          end_row = line,
+          hl_eol = true,
+          priority = 0,
+          strict = false,
+        })
+      end
+
       search(chars, lines, top, matches)
 
       local avail = available_labels(lines, matches)
