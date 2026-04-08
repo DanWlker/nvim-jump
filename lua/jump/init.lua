@@ -17,6 +17,9 @@ local CONFIG = {
   -- The highlight group to use for labels.
   label = 'FlashLabel',
 
+  -- The highlight group to use for the first (CR) label.
+  first_search = 'FlashCurrent',
+
   -- The highlight group to use for the backdrop.
   backdrop = 'FlashBackdrop',
 }
@@ -149,6 +152,7 @@ function M.start()
 
       local avail = available_labels(lines, matches)
 
+      local is_first = true
       for _, match in ipairs(matches) do
         local label = nil
 
@@ -160,10 +164,12 @@ function M.start()
           end
         end
 
+        local hl = is_first and CONFIG.first_search or CONFIG.search
+        is_first = false
         vim.hl.range(
           buf,
           NS,
-          CONFIG.search,
+          hl,
           { match.line, match.start_col },
           { match.line, match.end_col },
           { priority = 5001 }
