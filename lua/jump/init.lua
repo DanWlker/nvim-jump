@@ -121,7 +121,7 @@ function M.start()
           hl_group = CONFIG.backdrop,
           end_row = line,
           hl_eol = true,
-          priority = 0,
+          priority = 5000,
           strict = false,
         })
       end
@@ -147,7 +147,7 @@ function M.start()
           CONFIG.search,
           { match.line, match.start_col },
           { match.line, match.end_col },
-          { priority = 2 }
+          { priority = 5001 }
         )
 
         if label then
@@ -155,7 +155,7 @@ function M.start()
           api.nvim_buf_set_extmark(buf, NS, match.line, match.start_col, {
             virt_text = { { label, CONFIG.label } },
             virt_text_pos = 'overlay',
-            priority = 3,
+            priority = 5002,
           })
         end
       end
