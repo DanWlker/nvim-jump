@@ -140,8 +140,8 @@ function M.start()
       local cursor_col = cursor[2]
 
       local cols = vim.go.columns
+      local dfrom = cursor_line * cols + cursor_col
       table.sort(matches, function(a, b)
-        local dfrom = cursor_line * cols + cursor_col
         local da = math.abs(a.line * cols + a.start_col - dfrom)
         local db = math.abs(b.line * cols + b.start_col - dfrom)
         return da < db
