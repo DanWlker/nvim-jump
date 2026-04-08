@@ -202,7 +202,8 @@ function M.start(opts)
               jump_col = 0
             end
           end
-          active[label] = { jump_line + 1, jump_col, after_cursor }
+          active[label] =
+            { jump_line + 1, jump_col, jump_line * cols + jump_col >= dfrom }
           api.nvim_buf_set_extmark(buf, NS, match.line, match.start_col, {
             virt_text = { { label, CONFIG.label } },
             virt_text_pos = 'overlay',
