@@ -12,7 +12,7 @@ local CONFIG = {
   labels = 'fdsaghjklrewqtyuiopvcxzbnm',
 
   -- The highlight group to use for match highlights.
-  search = 'Search',
+  search = 'FlashMatch',
 
   -- The highlight group to use for labels.
   label = 'FlashLabel',
@@ -50,6 +50,18 @@ local function search(pattern, lines, start_line, matches)
   end
 end
 
+local function backdrop(buf, top, bot)
+  for line = top, bot do
+    api.nvim_buf_set_extmark(buf, NS, line - 1, 0, {
+      hl_group = CONFIG.backdrop,
+      end_row = line,
+      hl_eol = true,
+      priority = 5000,
+      strict = false,
+    })
+  end
+end
+
 local function available_labels(lines, matches)
   local avail = {}
 
@@ -79,6 +91,9 @@ function M.start()
   local chars = ''
   local matches = {}
   local active = {}
+
+  backdrop(buf, top, bot)
+  vim.cmd.redraw()
 
   while true do
     api.nvim_echo({ { '/' .. chars, '' } }, false, {})
@@ -116,15 +131,7 @@ function M.start()
     api.nvim_buf_clear_namespace(buf, NS, 0, -1)
 
     if #chars > 0 then
-      for line = top, bot do
-        api.nvim_buf_set_extmark(buf, NS, line - 1, 0, {
-          hl_group = CONFIG.backdrop,
-          end_row = line,
-          hl_eol = true,
-          priority = 5000,
-          strict = false,
-        })
-      end
+      backdrop(buf, top, bot)
 
       search(chars, lines, top, matches)
 
