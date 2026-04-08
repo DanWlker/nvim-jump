@@ -92,14 +92,6 @@ The following settings are available (along with their defaults):
 }
 ```
 
-For Colemak users you can use the following configuration:
-
-```lua
-require('jump').setup({
-  labels = 'tnseriaogmplfuwyqbjdhvkzxc',
-})
-```
-
 The default highlight group match flash so migrating is easier.
 
 ## License
