@@ -98,7 +98,7 @@ function M.start(opts)
   local chars = ''
   local matches = {}
   local active = {}
-  local conceallevel = nil
+  local conceallevel
 
   if CONFIG.disable_conceal then
     conceallevel = api.nvim_get_option_value('conceallevel', { win = win })
@@ -108,7 +108,7 @@ function M.start(opts)
   backdrop(buf, top, bot)
   vim.cmd.redraw()
 
-  local ok, err = xpcall(function()
+  local ok, err = pcall(function()
     while true do
       api.nvim_echo({ { '/' .. chars, '' } }, false, {})
 
@@ -221,7 +221,7 @@ function M.start(opts)
 
       vim.cmd.redraw()
     end
-  end, debug.traceback)
+  end)
 
   api.nvim_buf_clear_namespace(buf, NS, 0, -1)
   if conceallevel ~= nil then
@@ -230,7 +230,7 @@ function M.start(opts)
   api.nvim_echo({ { '', '' } }, false, {})
   vim.cmd.redraw()
 
-  if not ok then error(err) end
+  if not ok then error(err, 0) end
 end
 
 function M.setup(opts)
