@@ -3,10 +3,10 @@ local api = vim.api
 
 local M = {}
 local NS = api.nvim_create_namespace('jump')
-local CR = api.nvim_replace_termcodes('<Cr>', true, true, true)
-local BS = api.nvim_replace_termcodes('<Bs>', true, true, true)
-local CTRL_H = api.nvim_replace_termcodes('<C-h>', true, true, true)
-local ESC = api.nvim_replace_termcodes('<Esc>', true, true, true)
+local CR = vim.keycode('<Cr>')
+local BS = vim.keycode('<Bs>')
+local CTRL_H = vim.keycode('<C-h>')
+local ESC = vim.keycode('<Esc>')
 local LABELS = {}
 local CONFIG = {
   -- The labels that may be used, in order of their preference.
@@ -23,6 +23,10 @@ local CONFIG = {
 
   -- The highlight group to use for the backdrop.
   backdrop = 'FlashBackdrop',
+
+  -- Temporarily set conceallevel to 0 while searching so concealed characters
+  -- are visible and labels line up with what's on screen.
+  disable_conceal = true,
 }
 
 local function search(pattern, lines, start_line, matches)
@@ -38,9 +42,7 @@ local function search(pattern, lines, start_line, matches)
       while true do
         local start, stop = line:find(pattern, col, true)
 
-        if not start then
-          break
-        end
+        if not start then break end
 
         col = stop + 1
         table.insert(matches, {
@@ -96,138 +98,143 @@ function M.start(opts)
   local chars = ''
   local matches = {}
   local active = {}
+  local conceallevel = nil
+
+  if CONFIG.disable_conceal then
+    conceallevel = api.nvim_get_option_value('conceallevel', { win = win })
+    api.nvim_set_option_value('conceallevel', 0, { win = win })
+  end
 
   backdrop(buf, top, bot)
   vim.cmd.redraw()
 
-  while true do
-    api.nvim_echo({ { '/' .. chars, '' } }, false, {})
+  local ok, err = xpcall(function()
+    while true do
+      api.nvim_echo({ { '/' .. chars, '' } }, false, {})
 
-    local char = fn.getcharstr(-1)
-    local jump_to = active[char]
+      local char = fn.getcharstr(-1)
+      local jump_to = active[char]
 
-    if char == ESC then
-      break
-    elseif char == CR then
-      for _, char in ipairs(LABELS) do
-        jump_to = active[char]
+      if char == ESC then
+        break
+      elseif char == CR then
+        for _, char in ipairs(LABELS) do
+          jump_to = active[char]
+
+          if jump_to then break end
+        end
 
         if jump_to then
-          break
-        end
-      end
+          vim.cmd("normal! m'")
 
-      if jump_to then
+          if pending and jump_to[3] then vim.cmd('normal! v') end
+          api.nvim_win_set_cursor(win, { jump_to[1], jump_to[2] })
+        end
+
+        break
+      elseif char == BS or char == CTRL_H then
+        chars = chars:sub(1, #chars - 1)
+      elseif jump_to then
         vim.cmd("normal! m'")
 
-        if pending and jump_to[3] then
-          vim.cmd('normal! v')
-        end
+        if pending and jump_to[3] then vim.cmd('normal! v') end
         api.nvim_win_set_cursor(win, { jump_to[1], jump_to[2] })
+        break
+      else
+        chars = chars .. char
       end
 
-      break
-    elseif char == BS or char == CTRL_H then
-      chars = chars:sub(1, #chars - 1)
-    elseif jump_to then
-      vim.cmd("normal! m'")
+      matches = {}
+      active = {}
+      api.nvim_buf_clear_namespace(buf, NS, 0, -1)
 
-      if pending and jump_to[3] then
-        vim.cmd('normal! v')
-      end
-      api.nvim_win_set_cursor(win, { jump_to[1], jump_to[2] })
-      break
-    else
-      chars = chars .. char
-    end
+      if #chars > 0 then
+        backdrop(buf, top, bot)
 
-    matches = {}
-    active = {}
-    api.nvim_buf_clear_namespace(buf, NS, 0, -1)
+        search(chars, lines, top, matches)
 
-    if #chars > 0 then
-      backdrop(buf, top, bot)
+        local cursor = api.nvim_win_get_cursor(win)
+        local cursor_line = cursor[1] - 1
+        local cursor_col = cursor[2]
 
-      search(chars, lines, top, matches)
+        local cols = vim.go.columns
+        local dfrom = cursor_line * cols + cursor_col
+        table.sort(matches, function(a, b)
+          local da = math.abs(a.line * cols + a.start_col - dfrom)
+          local db = math.abs(b.line * cols + b.start_col - dfrom)
+          return da < db
+        end)
 
-      local cursor = api.nvim_win_get_cursor(win)
-      local cursor_line = cursor[1] - 1
-      local cursor_col = cursor[2]
+        local avail = available_labels(lines, matches)
 
-      local cols = vim.go.columns
-      local dfrom = cursor_line * cols + cursor_col
-      table.sort(matches, function(a, b)
-        local da = math.abs(a.line * cols + a.start_col - dfrom)
-        local db = math.abs(b.line * cols + b.start_col - dfrom)
-        return da < db
-      end)
+        local is_first = true
+        for _, match in ipairs(matches) do
+          local label = nil
 
-      local avail = available_labels(lines, matches)
-
-      local is_first = true
-      for _, match in ipairs(matches) do
-        local label = nil
-
-        for _, cur in ipairs(LABELS) do
-          if avail[cur] then
-            label = cur
-            avail[cur] = false
-            break
-          end
-        end
-
-        local hl = is_first and CONFIG.first_search or CONFIG.search
-        is_first = false
-        vim.hl.range(
-          buf,
-          NS,
-          hl,
-          { match.line, match.start_col },
-          { match.line, match.end_col },
-          { priority = 5001 }
-        )
-
-        if label then
-          local jump_col = match.start_col
-          local match_pos = match.line * cols + match.start_col
-          local after_cursor = match_pos >= dfrom
-          local jump_line = match.line
-          if before then
-            local offset = after_cursor and -1 or 1
-            jump_col = match.start_col + offset
-            local line_len = #lines[match.line_index]
-            if jump_col < 0 then
-              jump_line = math.max(0, match.line - 1)
-              local prev_line = lines[match.line_index - 1]
-              jump_col = prev_line and math.max(0, #prev_line - 1) or 0
-            elseif jump_col >= line_len then
-              jump_line = match.line + 1
-              jump_col = 0
+          for _, cur in ipairs(LABELS) do
+            if avail[cur] then
+              label = cur
+              avail[cur] = false
+              break
             end
           end
-          active[label] =
-            { jump_line + 1, jump_col, jump_line * cols + jump_col >= dfrom }
-          api.nvim_buf_set_extmark(buf, NS, match.line, match.start_col, {
-            virt_text = { { label, CONFIG.label } },
-            virt_text_pos = 'overlay',
-            priority = 5002,
-          })
+
+          local hl = is_first and CONFIG.first_search or CONFIG.search
+          is_first = false
+          vim.hl.range(
+            buf,
+            NS,
+            hl,
+            { match.line, match.start_col },
+            { match.line, match.end_col },
+            { priority = 5001 }
+          )
+
+          if label then
+            local jump_col = match.start_col
+            local match_pos = match.line * cols + match.start_col
+            local after_cursor = match_pos >= dfrom
+            local jump_line = match.line
+            if before then
+              local offset = after_cursor and -1 or 1
+              jump_col = match.start_col + offset
+              local line_len = #lines[match.line_index]
+              if jump_col < 0 then
+                jump_line = math.max(0, match.line - 1)
+                local prev_line = lines[match.line_index - 1]
+                jump_col = prev_line and math.max(0, #prev_line - 1) or 0
+              elseif jump_col >= line_len then
+                jump_line = match.line + 1
+                jump_col = 0
+              end
+            end
+            active[label] =
+              { jump_line + 1, jump_col, jump_line * cols + jump_col >= dfrom }
+            api.nvim_buf_set_extmark(buf, NS, match.line, match.start_col, {
+              virt_text = { { label, CONFIG.label } },
+              virt_text_pos = 'overlay',
+              priority = 5002,
+            })
+          end
         end
       end
-    end
 
-    vim.cmd.redraw()
-  end
+      vim.cmd.redraw()
+    end
+  end, debug.traceback)
 
   api.nvim_buf_clear_namespace(buf, NS, 0, -1)
+  if conceallevel ~= nil then
+    api.nvim_set_option_value('conceallevel', conceallevel, { win = win })
+  end
   api.nvim_echo({ { '', '' } }, false, {})
   vim.cmd.redraw()
+
+  if not ok then error(err) end
 end
 
 function M.setup(opts)
-  if opts then
-    CONFIG = vim.tbl_extend('force', CONFIG, opts)
-  end
+  if opts then CONFIG = vim.tbl_extend('force', CONFIG, opts) end
 
   LABELS = fn.split(CONFIG.labels, '\\zs')
 end

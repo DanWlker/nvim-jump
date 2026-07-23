@@ -62,7 +62,9 @@ Install the plugin using your favorite plugin manager, then create a mapping
 (this maps the plugin to the `s` key):
 
 ```lua
-vim.keymap.set({ 'n', 'x', 'o' }, 's', require('jump').start, {})
+vim.keymap.set({ 'n', 'x', 'o' }, 's', function()
+  require('jump').start()
+end, {})
 ```
 
 If you want to change the labels to use or the highlight groups, use the `setup`
@@ -89,6 +91,10 @@ The following settings are available (along with their defaults):
 
   -- The highlight group to use for the backdrop.
   backdrop = 'FlashBackdrop',
+
+  -- Temporarily set conceallevel to 0 while searching so concealed characters
+  -- are visible and labels line up with what's on screen.
+  disable_conceal = true,
 }
 ```
 
